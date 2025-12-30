@@ -1,0 +1,128 @@
+class PureMathRNG:
+    def __init__(self, seed, total_count=20):
+        self.state = seed
+        self.total_count = total_count
+        
+        # --- LCG SABİTLERİ (Gizli Matematik) ---
+        self.multiplier = 1664525
+        # Seed'e bağlı dinamik artış miktarı (Tersine mühendisliği zorlaştırır)
+        self.increment = (seed * 19937) + 1013904223
+        self.modulus = 4294967296 
+
+    def _chaos_step(self):
+        """
+        Algoritmanın motoru. Dışarıya asla sızdırılmaz.
+        """
+        # 1. COLLATZ (Kaos)
+        if self.state % 2 == 0:
+            collatz_val = self.state // 2
+        else:
+            collatz_val = 3 * self.state + 1
+        
+        # 2. LCG (Dağılım)
+        self.state = (self.multiplier * collatz_val + self.increment) % self.modulus
+        return self.state
+
+    def generate(self):
+        """
+        Dışarıya sadece 0 ve 1 dizisi verir.
+        Arka plandaki sayıları tamamen gizler.
+        """
+        raw_numbers = [] 
+        evens = 0
+        odds = 0
+        limit = self.total_count // 2
+        
+        # --- 1. ADIM: Gizli Sayı Üretimi ---
+        while evens < limit or odds < limit:
+            raw_num = self._chaos_step()
+            
+            # Sayıyı sıkıştır
+            final_num = (raw_num >> 10) % 1000
+            if final_num == 0: final_num = 1
+            
+            is_even = (final_num % 2 == 0)
+            
+            # Eşitlik Kotası Kontrolü
+            if is_even:
+                if evens < limit:
+                    raw_numbers.append(final_num)
+                    evens += 1
+                elif odds < limit:
+                    raw_numbers.append(final_num + 1)
+                    odds += 1
+            else: # Tek
+                if odds < limit:
+                    raw_numbers.append(final_num)
+                    odds += 1
+                elif evens < limit:
+                    raw_numbers.append(final_num + 1)
+                    evens += 1
+        
+        # --- 2. ADIM: Karıştırma (Shuffle) ---
+        # Sayıları karıştırıyoruz ki "önce çiftler sonra tekler" gibi bir desen oluşmasın.
+        shuffled_numbers = self._manual_shuffle(raw_numbers)
+        
+        # --- 3. ADIM: Şifreleme (Mapping) ---
+        # Gerçek sayıları yok edip sadece bitleri (0/1) dışarı veriyoruz.
+        binary_output = []
+        for num in shuffled_numbers:
+            if num % 2 == 0:
+                binary_output.append(0) # Çift -> 0
+            else:
+                binary_output.append(1) # Tek -> 1
+                
+        return binary_output
+
+    def _manual_shuffle(self, arr):
+        n = len(arr)
+        for i in range(n - 1, 0, -1):
+            rand_val = self._chaos_step()
+            target_index = rand_val % (i + 1)
+            arr[i], arr[target_index] = arr[target_index], arr[i]
+        return arr
+
+# --- ANA PROGRAM ---
+
+def main():
+    user_seed = 0
+    total_bits = 20 # İstenen bit sayısı (Çift sayı olmalı)
+
+    # Güvenli Giriş
+    while True:
+        try:
+            print("-" * 50)
+            giris = input("Lütfen Başlangıç Sayısını (Seed) Giriniz: ")
+            user_seed = int(giris)
+            if user_seed < 0:
+                print(">> Hata: Pozitif bir sayı giriniz.")
+                continue
+            break 
+        except ValueError:
+            print(">> Hata: Sadece sayısal değer giriniz.")
+
+    # Algoritmayı çalıştır
+    print(f"\nAlgoritma çalışıyor... (Seed: {user_seed})")
+    rng = PureMathRNG(seed=user_seed, total_count=total_bits)
+    
+    # Sadece bitleri alıyoruz
+    bits = rng.generate()
+
+    print("\n" + "="*40)
+    print("ÜRETİLEN RASTGELE BİT DİZİSİ")
+    print("="*40)
+    print(bits)
+    print("="*40)
+
+    # Sağlama (Hocaya Eşitliği Göstermek İçin)
+    zeros = bits.count(0)
+    ones = bits.count(1)
+    
+    print(f"\n[Analiz]: {zeros} adet '0' ve {ones} adet '1' üretildi.")
+    if zeros == ones:
+        print("[Durum] : MÜKEMMEL DENGE (Başarılı)")
+    else:
+        print("[Durum] : HATA (Denge Bozuk)")
+
+if __name__ == "__main__":
+    main()
