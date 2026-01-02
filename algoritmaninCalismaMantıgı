@@ -1,0 +1,29 @@
+Algoritmanın Çalışma Mantığı (Technical Explanation)
+
+Geliştirdiğim PureMathRNG algoritması, standart kütüphanelerden (random, time vb.) bağımsızdır, Hibrit Kaotik Haritalama ve Zorunlu Dağılım (Forced Distribution) prensiplerine dayanır.
+Algoritma 3 ana aşamadan oluşur:
+
+A. Kaos Motoru (The Chaos Engine)
+Rastgeleliğin kaynağı, iki matematiksel yöntemin birleştirilmesiyle oluşturulan _chaos_step fonksiyonudur:
+
+Collatz Sanısı (3n+1): Sayıyı doğrusal olmayan (non-linear) bir yörüngeye sokar. Sayı çiftse yarıya iner, tekse 3 ile çarpılıp 1 eklenir. Bu, sayının gidişatını tahmin edilemez kılar.
+
+LCG (Linear Congruential Generator): Collatz'dan gelen çıktı, (a * x + c) % m formülü ile devasa bir sayı uzayına yayılır.
+
+Özgün Dokunuş: Formüldeki artış miktarı (increment), kullanıcının girdiği seed değerine göre dinamik olarak değişir. Bu, tersine mühendisliği zorlaştırır.
+
+B. Eşit Dağılım Filtresi (Quota System)
+Bu algoritmada kesin sonuç verdiği için Kota Sistemi kullandım:
+
+Algoritma sayı üretirken "Çift Sayı" ve "Tek Sayı" kotalarını kontrol eder.
+
+Eğer üretilen sayı çift ise ama çift kotası dolmuşsa, sayı matematiksel olarak teke dönüştürülür (+1 eklenerek) ve tek kotasına yazılır.
+
+Bu sayede sonuç dizisinde kesinlikle eşit sayıda 0 ve 1 olması matematiksel olarak garanti altına alınır.
+
+C. Karıştırma ve Maskeleme (Shuffle & Mapping)
+Kota sistemi, dizinin sonlarına doğru desen oluşmasına (örn: son 5 sayının mecburen tek olması gibi) neden olabilir. Bunu önlemek için:
+
+Manuel Fisher-Yates Karıştırması: Dizi oluşturulduktan sonra, yine kendi kaos motorumuzdan gelen rastgele indekslerle dizi karıştırılır.
+
+Bit Maskeleme: Son aşamada, üretilen büyük tamsayılar (Örn: 8432, 119) kullanıcıdan gizlenir. Sadece mod 2 değerleri alınarak dışarıya 0 veya 1 bitleri verilir.
